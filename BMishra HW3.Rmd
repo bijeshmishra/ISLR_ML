@@ -1,0 +1,194 @@
+---
+title: "BMishra HW3"
+author: "Bijesh Mishra"
+date: 'Due date: 2/15/2021'
+output:
+  pdf_document: 
+    fig_caption: yes
+    fig_crop: no
+    highlight: pygments
+  word_document: default
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = TRUE, 
+                      warning = TRUE, 
+                      tidy.opts = list(width.cutoff = 70),
+                      tidy = TRUE)
+```
+## Machine Learning Homework 3
+
+```{r data, message=TRUE, warning=TRUE, paged.print=TRUE}
+rm(list = ls()) #Clear environment.
+setwd("~/Dropbox/OSU/PhD/SemVISp2021/STAT5063ML/Homeworks/hw3") #Mac.
+# install.package("MASS")
+library("MASS") # Load MASS package
+data(Boston, package = "MASS") #Boston dataset from MASS Package.
+attach(Boston) # Attach
+# help(Boston) #information
+```
+
+Q1: Interpret the p-value for the overall F test for predicting crime rate with all the available predictors, and interpret the R-squared.
+
+```{r HW3q1, message=TRUE, warning=TRUE, paged.print=TRUE}
+q1 = lm(crim ~ zn + indus + chas + nox + rm + age + dis + 
+          rad + tax + ptratio + black + lstat + medv)
+summary(q1)
+```
+### Q1 Answer:
+* Ho: B_zn = B_indus = B_chas = B_nox = B_rm = B_age = B_dis = B_rad = B_tax =B_ptratio = B_black = B_lstat = B_mdev = 0; where B represent Beta-cofefficients of respective variable.
+* Ha: Atleast one of the betas is different.
+* Test Statistics: F(13, 492) = 31.47.
+* Decision: Since p-value (< 2.2e-16) < 0.05, we reject Ho in favor of alternative hypothesis; atleast one of them is different. We need to include and test these variables in the model.
+
+* R-squared = 0.454 means about 45.40% of variation in the crime rate is explained by the model.
+
+### Q2: Consider a model ...
+### 2a):
+* Row design matrix X = [1 459 1 459]
+
+### 2b)
+```{r HW3q2(b), message=TRUE, warning=TRUE, paged.print=TRUE}
+q2 = lm(crim ~ tax*chas)
+q2
+```
+* fhatt(x) = - 8.87163 + 0.03078*tax + 5.42284*chas - 0.01706(tax*chas)
+
+### 2c) Verify using matrix multipication
+```{r HW3q2(c), message=TRUE, warning=TRUE, paged.print=TRUE}
+# names(Boston) # Get names or Boston[1, ] to view variables
+y = Boston[, 1]
+x = as.matrix(cbind(1, Boston[,4], Boston[,10], 
+                    Boston[, 4]*Boston[, 10]))
+matver = (solve(t(x)%*%x))%*%t(x)%*%y
+matver
+```
+The coefficients obtained from manual computation using formula is given on the table above and are same as Q2(b).
+
+### 2d)
+```{r HW3q2(d)Eqs, message=TRUE, warning=TRUE, paged.print=TRUE}
+q2
+```
+* eq2: fhatt0(x) = -8.87163 + 0.03078*tax # when chas = 0
+* eq1: fhatt1(x) = -8.87163 + 0.03078*tax + 5.42284*chas - 0.01706*(tax*chas) # when chas = 1
+
+```{r HW3q2(d)Plot, message=TRUE, warning=TRUE, paged.print=TRUE}
+# plot
+plot(x = tax, y = crim, xlab = "Tax", ylab = "Crime", pch = chas, 
+     col = 500, ylim = c(0,20), 
+     main = "Crime Rate: Tax & Charles River") 
+# different plotting characteristics for "chas" variable.
+curve(-8.87163 + 0.03078*x, add = TRUE, lwd = 3, col = 9, lty = 1) #chas = 0
+curve(-8.87163 + 0.03078*x + 5.42284 - 0.01706*x, 
+      add = TRUE, lwd = 3, lty = 10, col = 2) #chas = 1
+```
+
+### 2e) Confidence interval:
+```{r HW3q2(e), echo=TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+#ci = [Bhatt_interaction + 1.96*st. er., Bhatt_interaction - 1.96*st. er]
+# confint(q2)
+ci = confint(q2)[4, ]
+ci
+```
+If we draw random samples with same number of observations from the same population repeatedly, the true B-coefficient of the interaction term between charles river and tax rate lies between the this interval 95 out of 100 times to predict per capita crime by town.
+
+### 2f), & 2g):
+```{r HW3q2(f&g), message=TRUE, warning=TRUE, paged.print=TRUE}
+# predict (q2, newdata = data.frame(tax = 666, chas = 1), interval = "confidence") #f
+predict (q2, newdata = data.frame(tax = c(666, 666), chas = c(1, 0)),
+         interval = "confidence") #g
+```
+* Interpretation (2f) (given by 1): If we draw random samples with same number of observations from the same population repeatedly, the true crime rate in the property paying $666 tax and bordering to the Charles River lies between 1.086 to 10.295, 95 out of 100 times.
+
+* Interpreatation (2g) (given by 2): We can say with 95% confidence that the average crime rate falls between 1.086 to 10.295 in the property paying tax $666 and bordering to the Charles river.
+
+### 2h):
+```{r HW3q2(h), message=TRUE, warning=TRUE, paged.print=TRUE}
+predict (q2, newdata = data.frame(tax = 666, chas = 1), 
+         interval = "prediction") #h
+```
+
+* Interpreatation (h) (given by 1 on the bottom): We can say with 95% confidence that the average crime rate falls between -8.754 to 20.135 in the property paying tax $666 and bordering to the Charles river in Smithville.
+
+### 2i) Use matrix multipication in R to verify points above:
+```{r HW3q2(i), message=TRUE, warning=TRUE, paged.print=TRUE}
+newdata = c(1, 1, 666, 666)
+newpred = newdata%*% matver
+newpred1 = newdata%*% matver
+newpred
+newpred1
+```
+This result is same as above in q2(h) fit mean value. newpred and newpred1 are same; kept for better understanding of calculation.
+
+### 3) Find a model that contains at least 3 predictors, statistically significant at 0.05:
+```{r HW3q3, message=TRUE, warning=TRUE, paged.print=TRUE}
+# names(Boston)
+q3 = lm(crim ~ zn + dis + rad + medv + black)
+summary(q3)
+```
+* model: fhatt(x) = 7.920 + 0.052*zn - 0.672*dis + 0.472*rad - 0.174*medv - 0.008*black + e
+* All of the idepndent variables in the model above are statistically significant at 0.05. This can be confirmed by looking at p-value < 0.05 as indicated by at least *.
+
+### 4) Compare your model above to full model using partial F-test and interpret p-value.:
+```{r HW3q4, message=TRUE, warning=TRUE, paged.print=TRUE}
+anova(q3, q1) # Restricted model vs Full model F-test.
+```
+* Ho: B_indus = B_chas = B_nox = B_rm = B_age = B_tax = B_ptratio = B_lstat = 0; where B represent Beta-cofefficients of respective variable.
+* Ha: Atleast one of the betas is different.
+* Test Statistics: F(8, 492) = 1.6599 & p-value (0.1057) > 0.05. 
+* Decision: We fail to reject Ho because p-value > 0.05. So, this model is a complete model and no variables are missing in the model.
+
+### 5) Consider a model ...
+### 5a) 
+```{r HW3q(5)a, message=TRUE, warning=TRUE, paged.print=TRUE}
+taxsq = tax*tax
+q5 = lm(crim ~ tax + taxsq)
+summary(q5)
+t.test(taxsq, alternative = "two.sided", conf.level = 0.95,
+       paired = FALSE)
+```
+* Ho: B_taxsq = 0; Ha: B_taxsq != 0 (!=: is not equal to)
+* Test Statistics: t-test: T(505, a = 0.05/2) = 27.831, and p-value = < 0.000
+* Decision:  We reject null hypotheis (Ho) in favor of alternative hypothesis (Ha) and thus the quadratic term is not equal to zero. So, the crim and tax have non-linear relationship.
+
+### 5b) Plot:
+```{r HW3q(5)b, message=FALSE, warning=FALSE, paged.print=FALSE}
+plot(x = tax, y = crim, xlab = "Tax", ylab = "Crime Rate", 
+     ylim = c(0,20))
+curve(q5$coefficients[1] + q5$coefficients[2]*x + q5$coefficients[3]*x^2,
+      add = TRUE, col = 5, lwd = 3, lty = 4)
+```
+
+### 5c) Get prediction interval for crime rate using tax = 666.
+```{r HW3q(5)c, message=TRUE, warning=TRUE, paged.print=TRUE}
+predict (q5, newdata = data.frame(tax = 666, taxsq = 666*666), interval = "prediction")
+```
+* The prediction interval of crime rate for tax = 666 for the quadratic model is between -1.523389 and 25.51265.
+
+### 5d) Assume the mean 0, constant variance & normality assumption using plot.
+```{r HW3q(5)d, message=TRUE, warning=TRUE, paged.print=TRUE}
+par(mfrow = c(2,2))
+# plot(q5,  main = "")
+plot(q5,  main = "Quadratic Model Residual Plots")
+```
+
+* (Error) Mean = 0: May not be valid as the residual vs fitted plots shows that the value of residuals are more widely spread as we progress towards higher vaule of x and y. The dots in the plot is not randomly scattered indicating there is some kind of patter in the data. The residual plots might be showing heteroscadesticity.
+
+* Constant Variance: May not be valid as the Scale-location plot does not have red line roughly horizantal. This like is increasing at the beinging and bending to become more or less horizantal showing some type of non-linear pattern. This might be a symbol of heteroscadesticity.
+
+* The normal Q-Q plot ideally should have all points falling on straight line rising more or less diagonally from bottom left to top right. But the plot is curvy which shows residual is not normally distributed. This means either data is skewed or have more extreme values. But Residual vs Leverage plots (which should be showing extreme values beyong cook's distance) does not give much indication of extreme values in the data. So, data is more likely to be skewed.
+
+```{r HW3q(5)extra, message=TRUE, warning=TRUE, paged.print=TRUE}
+# Breusch-Pagan Test:
+# install.packages("lmtest")
+# library(lmtest)
+# bptest(q5)
+# Ho: Homoscadestic; Ha: Heteroscadestic; p-value < 0.005; Decision: Reject Ho.
+```
+
+### 6)
+Since inches and centeimers are convertible by multiplying one of them by a constant (1 inch = 2.54 cm), this creates a multicollinearity and the variance cannot be computed. We cannot compute XX` matrix and thus variance covariance matrix is not possible. Asymptotic VIF = 1/(1-R^2j1 - j) = infinity as R^2j1 = 1.

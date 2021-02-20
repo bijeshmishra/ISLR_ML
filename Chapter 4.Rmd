@@ -1,0 +1,249 @@
+---
+title: "Chapter 4"
+author: "Bijesh Mishra"
+date: "2/17/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Machine Learning Chapter 4: Classification
+
+This document contains codes related to STAT 5063 Machine Learning Chapter 4 from Statistics Department of Oklahoma State University. This RMD is stored in lecture fol der. Lecture folder also contains RMD file and pdf generated after knitting RMD file. So, for each lecture, there must be three files inside thid folder: 1) Lecture notes (Chapter 4), 2) RDM File (Chapter 4.Rmd) and 3) Pdf file (Chapter-4) after knitting with same name. Note that RMD file for homework is stored inside homework folder.
+
+## Lecture and Video Codes:
+```{r Clear Environment, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+rm(list = ls()) #Clear environment. #Run manually.
+```
+
+### Motivaiton and Overview 
+  - Logistic regression
+  - Linear dicreminant analysis
+  - Quadratic discreminant analysis
+  - K-nearest neighbors
+
+### 4.1 Classification: Motivation and Overview
+```{r 4.1 Example 1, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+library(ISLR)
+help(Default)
+plot(Default, pch = ".")
+dim(Default)
+Default[1:3,]
+summary(Default)
+```
+
+### 4.2 Logistic Regression
+#### 4.2.1: The Logistic Model
+```{r 4.2.1 The Logistic Model, echo=TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+# curve 
+logit = function(b0 = 0, b1 = 1, xlim = NULL) {
+  curve(exp(b0 + b1*x)/(1 + exp(b0 + b1*x)),
+          ylab = "p(x)",
+          add = TRUE, xlim = xlim, lwd = 3)}
+logit(b0 = 0,b1 = 1, xlim = c(-10,10)) # xlim defines range of x.
+logit(b0 = 0, b1 = 0) # notice how y-axis or p(x) value changes compared to first one.
+logit(b0 = -2, b1 = 0) # notice how y-axis or p(x) value changes compared to first one.
+logit(b0 = 1, b1 = 0) # notice how y-axis or p(x) value changes compared to first one.
+logit(b0 = 5, b1 = 1) # notice how y-axis or p(x) value changes compared to first one.
+logit(b0 = -5, b1 = 1) # notice how y-axis or p(x) value changes compared to first one.
+logit(b0 = 0, b1 = -1) # notice how y-axis or p(x) value changes compared to first one.
+logit(b0 = 0, b1= -.5) # notice how y-axis or p(x) value changes compared to first one.
+logit(b0 = 0, b1 = -2) # notice how y-axis or p(x) value changes compared to first one.
+logit(b0 = 0, b1 = -.2) # notice how y-axis or p(x) value changes compared to first one.
+```
+
+#### 4.2.2: Maximum Likelihood Estimator
+##### 4.2.3: Examples
+```{r 4.2.3: Examples, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+attach(Default)
+Inc.model = glm(default~balance, family = "binomial")
+summary(Inc.model)$coef
+co = coef(Inc.model)
+plot(balance, I(default == "Yes"))
+curve(exp(co[1] + co[2]*x)/(1 + exp(co[1] + co[2]*x)), add = TRUE, lwd =3)
+abline(h = 0.5, v = -co[1]/co[2])
+-co[1]/co[2]
+
+exp(co[1] + co[2]*1000)/(1 + exp(co[1] + co[2]*1000))
+predict(Inc.model, newdata = data.frame(balance = c(1000,2000)), type = "response")
+predict(Inc.model, newdata = data.frame(balance = c(1000,2000)))
+exp(-5.1524)/(1 + exp(-5.1524))
+student.model = glm(default~student, family = "binomial", data = Default)
+summary(student.model)$coef
+exp(.40489)
+predict(student.model,
++ newdata = data.frame(student = c("Yes","No")), type = "response")
+predict(student.model,
++ newdata = data.frame(student = c("Yes","No")))
+exp(-3.099241)/(1+exp(-3.099241))
+exp(-3.50412)/(1 + exp(-3.50412))
+```
+
+##### 4.2.4: Multiple Logistic Regression:
+```{r 4.2.4: Multiple Logistic Regression, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+bal.stud.model = glm(default~ balance + student,
+                     family = "binomial",
+                     data = Default)
+summary(bal.stud.model)$coef
+plot(balance, I(default == "Yes"), col = student)
+co = coef(bal.stud.model)
+
+# recall the logit function for plotting
+args(logit)
+function (b0 = 0, b1 = 1, xlim = NULL)
+logit(b0 = co[1], b1=co[2])
+logit(b0 =co[1] + co[3], b1 = co[2])
+coef(bal.stud.model)
+boxplot(predict(bal.stud.model)~default)
+abline(h = log(.5/(1-.5)), lwd =3)
+abline(h = log(.2/.8), lty=2, col =2, lwd =3)
+log(.2/.8)
+predictions<-rep("No",10000)
+predictions[predict(bal.stud.model)>0]<-"Yes"
+data.frame(predict(bal.stud.model), predictions, default)[c(1:3,9952),]
+table(predictions, default)
+round(prop.table(table(predictions, default), 2),3)
+```
+
+##### 4.2.5: Classification with Logistic Regression:
+```{r 4.2.5: Classification with Logistic Regression, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+co<-coef(bal.stud.model)
+# recall the logit function for plotting
+args(logit)
+function (b0 = 0, b1 = 1, xlim = NULL)
+logit(b0 = co[1], b1=co[2])
+logit(b0 =co[1] + co[3], b1 = co[2])
+coef(bal.stud.model)
+boxplot(predict(bal.stud.model)~default)
+abline(h = log(.5/(1-.5)), lwd =3)
+abline(h = log(.2/.8), lty=2, col =2, lwd =3)
+log(.2/.8)
+```
+
+#### 4.3: Error Rates for Classification Rules:
+#### 4.3.1: Training Error Rate
+```{r Training Error Rate, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+predictions<-rep("No",10000)
+predictions[predict(bal.stud.model)>0]<-"Yes"
+data.frame(predict(bal.stud.model), predictions, default)[c(1:3,9952),]
+table(predictions, default)
+round(prop.table(table(predictions, default), 2),3)
+mean(predictions!=default)
+predictions<-rep("No",10000)
+mean(predictions!=default)
+```
+
+#### 4.3.2: Confusion Matrix: False Positive and True Positives
+```{r Confusion Matrix: False Positive and True Positives, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+predictions<-rep("No",10000)
+predictions[predict(bal.stud.model)>log(.2/(.8))]<-"Yes"
+table(predictions, default)
+round(prop.table(table(predictions,default),2),2)
+predictions<-rep("No",10000)
+predictions[predict(bal.stud.model)>log(.05/(.95))]<-"Yes"
+table(predictions, default)
+round(prop.table(table(predictions,default),2),2)
+round(prop.table(table(predictions,default),1),2)
+```
+
+#### 4.3.3: Estimating Test Error Rates
+```{r 4.3.3: Estimating Test Error Rates, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+set.seed(1)
+train.index<-sample(1:10000, 9000)
+train.index[1:5]
+#detach(Default)
+Default.test<-Default[-train.index,]
+dim(Default.test)
+Default.train<-Default[train.index,]
+dim(Default.train)
+model<-glm(default~balance + student, family = "binomial", data = Default.train)
+predictions<-rep("No", 1000)
+predictions[predict(model, newdata = Default.test)>0]<-"Yes"
+table(predictions,Default.test$default)
+mean(predictions!=Default.test$default)
+predictions<-rep("No", 1000)
+predictions[predict(model, newdata = Default.test)>log(.05/.95)]<-"Yes"
+table(predictions,Default.test$default)
+round(prop.table(table(predictions,Default.test$default),1),3)
+```
+
+#### 4.4: Bayes' Rule:
+
+### 4.5: Linear Discriminant Analysis:
+#### 4.5.1: Univariate LDA Classifier:
+```{r 4.5.1: Univariate LDA Classifier, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+summary(lm(balance~default, data = Default.train))
+t.test(balance~default, var.equal = T, data = Default.train)
+# Univariate LDA
+library(MASS)
+lda.fit<-lda(default~balance, data = Default.train)
+lda.fit
+
+plot(lda.fit)
+predictions<-predict(lda.fit, newdata = Default.test)
+names(predictions)
+cbind(predictions$x, 
+      predictions$posterior, predictions$class,
+      Default.test$default)
+table(predictions$class, Default.test$default)
+round(prop.table(table(pred=predictions$class,
+                       def=Default.test$default),2),3)
+```
+
+#### 4.5.2: Multivariate LDA Classifier:
+##### Multivariate Normal Distribution:
+```{r Multivariate Normal Distribution:, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+summary(manova(cbind(Default$income,
+                     Default$balance) ~ Default$default))
+plot(income, balance, 
+     pch = as.numeric(default), 
+     col = as.numeric(default))
+lda.fit2<-lda(default~balance + income,
+              data = Default.train)
+table(pred = predictions2$class, 
+      def = Default.test$default)
+```
+
+### 4.6: Quadratic Discriminant Analysis:
+#### 4.6.1: The QDA Classifier:
+#### 4.6.2: Application:
+```{r 4.6.2: Application, echo= TRUE, message=TRUE, warning=TRUE, paged.print = TRUE}
+qda.fit = qda(default~balance + income, data = Default.train)
+qda.fit
+predictions = predict(qda.fit, 
+                      newdata = Default.test)
+names(predictions)
+table(predictions$class, Default.test$default)
+```
+
+### 4.7: K Nearest Neighbor:
+#### 4.7.1: Method:
+#### 4.7.2: Application:
+```{r 4.7.2: Application, echo= TRUE, message=TRUE, warning=TRUE, paged.print = TRUE}
+library(class)
+train.X = scale(Default.train[,3:4])
+test.X = scale(Default.test[,3:4])
+y.train = Default.train[,1]
+set.seed(1)
+
+predictions = knn(train.X, test.X,y.train,k=3)
+table(predictions, default = Default.test$default)
+predictions<-knn(train.X, test.X,y.train,k=5)
+table(predictions, default = Default.test$default)
+```
+
+### 4.8: Comments
+```{r 4.8: Comments, echo= TRUE, message=TRUE, warning=TRUE, paged.print = TRUE}
+summary(manova(cbind(Default$income, 
+                     Default$balance) ~ Default$default))
+data(iris)
+names(iris)
+lda.fit = lda(Species~Sepal.Length + Sepal.Width + 
+                Petal.Length + Petal.Width, 
+              + data = iris)
+lda.fit
+preds<-predict(lda.fit)
+cbind(preds$posterior, preds$x)[1:5,]
+```

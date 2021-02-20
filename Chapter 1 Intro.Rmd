@@ -1,0 +1,24 @@
+---
+title: "Chapter 4"
+author: "Bijesh Mishra"
+date: "2/17/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Machine Learning Chapter 1: Intro
+
+This document contains codes related to STAT 5063 Machine Learning Chapter 4 from Statistics Department of Oklahoma State University. This RMD is stored in lecture folder. Lecture folder also contains RMD file and pdf generated after knitting RMD file. So, for each lecture, there must be three files inside thid folder: 1) Lecture notes (Chapter 4), 2) RDM File (Chapter 4.Rmd) and 3) Pdf file (Chapter-4) after knitting with same name. Note that RMD file for homework is stored inside homework folder.
+
+## Lecture and Video Codes:
+```{r Clear Environment, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+rm(list = ls()) #Clear environment. #Run manually.
+```
+
+### 4.1 Classification: Motivation and Overview
+```{r 4.1 Classification: Motivation and Overview, echo= TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+summary(cars)
+```
