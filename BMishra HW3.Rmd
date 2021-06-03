@@ -24,7 +24,7 @@ knitr::opts_chunk$set(message = TRUE,
 
 ```{r data, message=TRUE, warning=TRUE, paged.print=TRUE}
 rm(list = ls()) #Clear environment.
-setwd("~/Dropbox/OSU/PhD/SemVISp2021/STAT5063ML/Homeworks/hw3") #Mac.
+setwd("/Users/bmishra/Dropbox/OSU/PhD/SemVISp2021/STAT5063ML/Homeworks/hw3 Regression/BMishra HW3.Rmd") #Mac.
 # install.package("MASS")
 library("MASS") # Load MASS package
 data(Boston, package = "MASS") #Boston dataset from MASS Package.
@@ -149,7 +149,7 @@ taxsq = tax*tax
 q5 = lm(crim ~ tax + taxsq)
 summary(q5)
 t.test(taxsq, alternative = "two.sided", conf.level = 0.95,
-       paired = FALSE)
+        paired = FALSE) # not asking to test taxsq. Askig for model beta-coef.
 ```
 * Ho: B_taxsq = 0; Ha: B_taxsq != 0 (!=: is not equal to)
 * Test Statistics: t-test: T(505, a = 0.05/2) = 27.831, and p-value = < 0.000
@@ -182,13 +182,14 @@ plot(q5,  main = "Quadratic Model Residual Plots")
 
 * The normal Q-Q plot ideally should have all points falling on straight line rising more or less diagonally from bottom left to top right. But the plot is curvy which shows residual is not normally distributed. This means either data is skewed or have more extreme values. But Residual vs Leverage plots (which should be showing extreme values beyong cook's distance) does not give much indication of extreme values in the data. So, data is more likely to be skewed.
 
-```{r HW3q(5)extra, message=TRUE, warning=TRUE, paged.print=TRUE}
 # Breusch-Pagan Test:
+
+```{r HW3q(5)extra, message=TRUE, warning=TRUE, paged.print=TRUE}
 # install.packages("lmtest")
-# library(lmtest)
-# bptest(q5)
-# Ho: Homoscadestic; Ha: Heteroscadestic; p-value < 0.005; Decision: Reject Ho.
+library(lmtest)
+bptest(q5)
 ```
+Ho: Homoscadestic; Ha: Heteroscadestic; p-value < 0.005; Decision: Reject Ho.
 
 ### 6)
 Since inches and centeimers are convertible by multiplying one of them by a constant (1 inch = 2.54 cm), this creates a multicollinearity and the variance cannot be computed. We cannot compute XX` matrix and thus variance covariance matrix is not possible. Asymptotic VIF = 1/(1-R^2j1 - j) = infinity as R^2j1 = 1.

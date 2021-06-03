@@ -1,0 +1,433 @@
+---
+title: "Homework 10: Principle Component Analysis"
+output: pdf_document
+author: "Bijesh Mishra"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = TRUE)
+```
+
+```{r HW10, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+rm(list = ls())
+library(MASS)
+```
+
+Q1.A: Construct a plot of $\rho$ (-1 to 1) Vs $\lambda_1$ (First eigen value for the eigen decomposition). Label y-axis as "Lambda1". Explain when principle component analysis will be most effective at dimension reduction.
+```{r Q1.A, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+rhoo = seq(-1, 1, 0.2)
+lambda = NULL
+for (i in 1:length(rhoo)){
+        sigmaaa = matrix(c(1, rhoo[i], rhoo[i], 1), 2, 2, byrow = TRUE)
+        decompoo = eigen(sigmaaa)
+        lambda[i] = decompoo$value[1]
+}
+
+plot(rhoo, lambda,
+     xlab = "Rho", ylab = "Lambda1",
+     pch = "o", col = "red",
+     main = "Eigen Value Vs Lambda1")
+```
+
+Answer: Lambda1 ($\lambda_1$) is the variance of first principle component which is first eigen value and $\rho$ is COV($X_1$,$X_2$). When $\rho$ = 1 or -1 (ie. perfectly correlated in magnitude) and Var($X_1$) = 1 and Var($X_2$) = 1 then we can use either $X_1$ or $X_2$ to explain maximum variation as given by principle component $Z_1$. So, this is the most effective condition to reduce the dimension as one of the variable inluded in PCA can explain all variability in the data.
+
+Q1B.I Construct a scatter plot for each dataset.
+```{r Q1.B.I, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+set.seed(999)
+sigma.1b1 = matrix (c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2) # Covariance matrix: 0.8
+x.1b1 = mvrnorm(1000, mu = c(0,0), Sigma = sigma.1b1)
+
+set.seed(999)
+sigma.1b2 = matrix (c(1, 0.3, 0.3, 1), nrow = 2, ncol = 2) # Covariance matrix: 0.3
+x.1b2 = mvrnorm(1000, mu = c(0,0), Sigma = sigma.1b2)
+
+set.seed(999)
+sigma.1b3 = matrix (c(1, -0.3, -0.3, 1), nrow = 2, ncol = 2) # Covariance matrix: -0.3
+x.1b3 = mvrnorm(1000, mu = c(0,0), Sigma = sigma.1b3)
+
+set.seed(999)
+sigma.1b4 = matrix (c(1, -0.8, -0.8, 1), nrow = 2, ncol = 2) # Covariance matrix: -0.8
+x.1b4 = mvrnorm(1000, mu = c(0,0), Sigma = sigma.1b4)
+
+par(mfrow = c(2,2))
+plot(x.1b1, xlab = "X1", ylab = "X2", col = c(1:1000), main = "Rho: 0.8")
+plot(x.1b2, xlab = "X1", ylab = "X2", col = c(1:1000), main = "Rho: 0.3")
+plot(x.1b3, xlab = "X1", ylab = "X2", col = c(1:1000), main = "Rho: -0.3")
+plot(x.1b4, xlab = "X1", ylab = "X2", col = c(1:1000), main = "Rho: = -0.8")
+```
+
+Q1B.II
+```{r Q1.B.II Bonus, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+eigen(sigma.1b1) # 0.8
+eigen(sigma.1b2) # 0.3
+eigen(sigma.1b3) # -0.3
+eigen(sigma.1b4) # -0.8
+```
+
+* First PC for rho 0.8: $Z_1$ = 0.707 $X_1$ + 0.707 $X_2$
+* Variance of Ist PC of Rho 0.8: ($\lambda_1$) = 1.8
+
+* First PC for rho 0.3: $Z_1$ = 0.707 $X_1$ + 0.707 $X_2$
+* Variance of Ist PC of Rho 0.3: ($\lambda_1$) = 1.3
+
+* First PC for rho -0.3: $Z_1$ = -0.707 $X_1$ + 0.707 $X_2$
+* Variance of Ist PC of Rho -0.3: ($\lambda_1$) = 1.3
+
+* First PC for rho -0.8: $Z_1$ = -0.707 $X_1$ + 0.707 $X_2$
+* Variance of Ist PC of Rho -0.8: ($\lambda_1$) = 1.8
+
+Q1.B.III:
+```{r Q1.B. III, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+x.b31 = as.data.frame(x.1b1) #Rho = 0.8
+pca.b31 = princomp(x.b31) #Rho = 0.8
+
+x.b32 = as.data.frame(x.1b2) #0.3
+pca.b32 = princomp(x.b32) #Rho = 0.3
+
+x.b33 = as.data.frame(x.1b3) # -0.3
+pca.b33 = princomp(x.b33) #Rho = -0.3
+
+x.b34 = as.data.frame(x.1b4) # -0.8
+pca.b34 = princomp(x.b34) #Rho = -0.8
+
+par(mfrow = c(2,2))
+hist(pca.b31$scores[,1], 
+     xlab = "Ist PC Score", ylab = "Frequency", 
+     xlim = c(-5, 5), main = "Ist PC, Rho = 0.8")
+hist(pca.b32$scores[,1], 
+     xlab = "Ist PC Score", ylab = "Frequency", 
+     xlim = c(-5, 5), main = "Ist PC, Rho = 0.3")
+hist(pca.b33$scores[,1], 
+     xlab = "Ist PC Score", ylab = "Frequency",
+     xlim = c(-5, 5), main = "Ist PC, Rho = -0.3")
+hist(pca.b34$scores[,1], 
+     xlab = "Ist PC Score", ylab = "Frequency", 
+     xlim = c(-5, 5), main = "Ist PC, Rho = -0.8")
+
+pca.b31$loadings # Ist and 2nd PCs Loadings and Variance Explained for Rho = 0.8
+pca.b32$loadings # Ist and 2nd PCs Loadings and Variance Explained for Rho = 0.8
+pca.b33$loadings # Ist and 2nd PCs Loadings and Variance Explained for Rho = 0.8
+pca.b34$loadings # Ist and 2nd PCs Loadings and Variance Explained for Rho = 0.8
+
+pca.b31$sdev^2 # Variances of Ist and 2nd PCs for Rho = 0.8
+pca.b32$sdev^2 # Variances of Ist and 2nd PCs for Rho = 0.3
+pca.b33$sdev^2 # Variances of Ist and 2nd PCs for Rho = -0.3
+pca.b34$sdev^2 # Variances of Ist and 2nd PCs for Rho = -0.8
+```
+
+* Variance of Ist PC of Rho 0.8: ($\lambda_1$) = 1.73
+* Variance of Ist PC of Rho 0.3: ($\lambda_1$) = 1.25
+* Variance of Ist PC of Rho -0.3: ($\lambda_1$) = 1.25
+* Variance of Ist PC of Rho -0.8: ($\lambda_1$) = 1.73
+
+Variances of Ist PC here are very close but are smaller compared to variances of Ist PC from above.
+
+Q1.B.IV:
+```{r Q1.B. IV, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+sigma.1b2
+eigen(sigma.1b2)
+sigma.1b3
+eigen(sigma.1b3)
+```
+
+* Answer: When correlation is 0.8 or 0.3 between $X_1$ and $X_2$, we obtain positive sign in first PC for both $X_1$ and $X_2$. This is because of positive correlation between $X_1$ and $X_2$. But when correlation is -0.3 or -0.8 between $X_1$ and $X_2$, we obtian negative sign for $X_1$ and positive sign for $X_2$. This is because of negative correlation between $X_1$ and $X_2$.
+
+Q2:
+```{r Q2, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+sigma.q2.1 = matrix (c(1, 0.5, 0.5, 1), nrow = 2, ncol = 2) # COV Matrix; rho11 = 1
+decomp.q2.1  = eigen(sigma.q2.1)
+decomp.q2.1
+sigma.q2.2 = matrix (c(5, 0.5, 0.5, 1), nrow = 2, ncol = 2) # COV Matrix; rho11 = 5
+decomp.q2.2  = eigen(sigma.q2.2)
+decomp.q2.2
+sigma.q2.3 = matrix (c(10, 0.5, 0.5, 1), nrow = 2, ncol = 2) # COV Matrix; rho11 = 10
+decomp.q2.3  = eigen(sigma.q2.3)
+decomp.q2.3
+sigma.q2.4 = matrix (c(100, 0.5, 0.5, 1), nrow = 2, ncol = 2) # COV Matrix; rho11 = 100
+decomp.q2.4  = eigen(sigma.q2.4)
+decomp.q2.4
+```
+* First Principle component for $\sigma_{11}$ = 1: $Z_1$ = 0.707 $X_1$ + 0.707 $X_2$
+* First Principle component for $\sigma_{11}$ = 5: $Z_1$ = -0.993 $X_1$ -0.122 $X_2$
+* First Principle component for $\sigma_{11}$ = 10: $Z_1$ = -0.999 $X_1$ - 0.553 $X_2$
+* First Principle component for $\sigma_{11}$ = 100: $Z_1$ = -0.999 $X_1$ -0.005 $X_2$
+
+Comparing four Ist PCs above, we can see the coefficient of $X_1$ increasing in magnitude as $\sigma_{11}$ increases from 1 to 100. At 100, coefficient of $X_2$ is almost zero and that of $X_1$ is almost 1 in magnitude. So, we need to scale the data i.e. run PCA on correlation matrix not on covariance matrix. Also, as the value of $\sigma_{11}$ increases, the variance explained by first principle component increases in overall PCA. Also, the variable $X_1$ appears to be most important in the analysis compared to any other variable which is most likely due to increase in scale. For example, the variance explanined by $X_1$ and $X_2$ was equal in $Z_1$ (first PC) when $\sigma_{11}$ = 1 and variance of $Z_1$ = 1.5 and $Z_2$ = 0.5. When $\sigma_{11}$ = 100 (increase in scale) and variance of $Z_1$ = 100 and $Z_2$ = 0.99 which means almost all variance is explained by first PC due to increased scale of $X_1$.
+
+Q3:
+```{r Q3, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+library(readxl) #read excel.
+# studentdata2019 = read_excel("Dropbox//OSU/PhD//SemVISp2021//STAT5063ML//Data//StudentData2019.xlsx") #office
+studentdata2019 = read_excel("//Users//bmishra//Dropbox//OSU//PhD//SemVISp2021//STAT5063ML//Data//StudentData2019.xlsx") #mac
+q3.data = as.data.frame(cbind(studentdata2019[,3:6],
+                              studentdata2019[,9]))
+q3.data = setNames(q3.data,
+                   tolower(names(q3.data))) #lower case names.
+attach(q3.data, pos = 2L, warn.conflicts = F)
+# names(q3.data)
+# View(q3.data)
+```
+Q3.A:
+```{r Q3.a, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+par(mfrow = c(1,2))
+q3a.unsc = princomp(q3.data, cor = FALSE) #PCA Unscaled.
+biplot(q3a.unsc, scale = 0, main = "PCA Unscaled")
+q3a.sc = prcomp(q3.data, scale = T) #PCA Scaled.
+biplot(q3a.sc, scale = 0, main = "PCA Scaled")
+as.data.frame(cbind(var(q3.data$hsclass), 
+                    var(q3.data$txtsent), 
+                    var(q3.data$txtrec),
+                    var(q3.data$fbtime), 
+                    var(q3.data$introvert)))
+```
+The variable do not have same unit of measurement or scale. If we perform PCA on unstandarized data, the first principle component loading vector will have a very large loading for a variable with highest variance. In out data, txtrec has highest variance and thus the first principle component loading vector will have a very large loading for txtrec which we can see in the figure above as well.
+
+Q3.B:
+```{r Q3.b1, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+round(as.data.frame(cor(q3.data)),3) #correlation matrix.
+```
+```{r Q3.b2, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+plot(q3.data, pch = "*", col = "red", main = "Pairwise Correlation Scatterplot Matrix")
+```
+
+I call correlation coefficient below 0.8 as moderate for this assignment. Text sent (txtsent) and text received (txtrec) have positive and moderate correlation as seen in the chart as well as correlatin matrix. The slope of scatterplot is increasing which shows positive correlation. This is further supported by correlation coefficient of 0.726 between txtrec and txtsent in the correlation matrix.
+
+Q3.C.I:
+```{r Q3.c, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+# q3c.pca1 = prcomp(q3.data, scale = T) #PCA Scaled.
+q3c.pca = princomp(q3.data, cor = TRUE) #PCA Scaled.
+q3c.pca # Call, Standard Deviation of PCAS, # Variables, # Obs
+# names(q3c.pca)
+```
+
+```{r Q3.c.I, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+# q3c.pca = princomp(q3.data, cor = TRUE) #PCA Scaled.
+q3c.pca$loadings #PCA loadings.
+```
+
+Ist PC: $Z_1$ = 0.382hsclass + 0.635txtsent + 0.576txtrec + 0.242fbtime - 0.246introvert
+
+Q3.C.I: text sent and text received.
+In correlation matrix, txtsent and txtrec have positive correlation with coefficient of 0.726 which is the highest among any pairwise correlation. Also, in the first PC these two viariables have highest vector loadings. 
+
+Q3.C.II:
+In the pairwise correlation matrix, the pairwise correlations between HSClass, TxtSent, TxtRec, FbTime are positively correlated with each other but introvert is negatively correlated with txtsent, txtrec, fbtime. In Ist PC factor loading above, introvert has negative factor loading and all other variables have positive loadings. 
+
+Q3.C.III:
+I expect a person from a large high school who does a lot of texting and facebooking to have positive PC score. The loading of these hsclass, txtsent, txtrec and facbooking are positively loaded in Ist PC.
+
+Q3.D:
+```{r Q3.D.I, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+par(mfrow = c(1,1))
+biplot(q3c.pca, scale = 0, main = "PCA Scaled", 
+       ylab = "PC 2 Variable loading", 
+       xlab = "PC 1 Variable Loading")
+```
+
+Q3.D.I:
+The arrows point in the same direction and angle is small so they are strongly associated. 
+
+The arrows are plotting Ist and 2nd PC loading for each variable. For example, The arrow for fbtime is showing the direction of loading towards point (0.242, 0.603) which denote fbtime location on plot. The point is obtained from scores of fbtime on $I^{st}$ and $2^{nd}$ PCs. These values are plotted on  scales on top for $PC_1$ and on the right for $PC_2$. The origin of arrow is (0,0). The diection of arrow shows direction of variability from the origin.
+
+Q3.D.II::
+The texting arrows are pointed in the opposite direction to the introversion arrow. This tells us that texting variables are similar variables but introversion is opposite variable to texting variables. This further can be understood from factor loading and correlation matrix. In correlation matrix, txtsend and txtrev have positive sign and are positively correlated with each other. Also, in factor loadings, these two variables have same direction and almost same magnitue. Howeve, the introversion has negative correlation with both txtrec and txtsent in the correlation matrix as well as opposite sign in Ist PC which explains texting behavior. This is as expected.
+
+Q3.D.III:
+```{r Q3.d.III, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+score45 = q3c.pca$scores[45,2] # Scores for 45
+score45 # Scores for 45
+q3c.pca$loading # loadings
+```
+Fb was below average. 
+
+The sum of loading for second PC is positive. But the scores of 45th sudent is negative. The negative value tells us that the values for variables are below average. The $2^{nd}$ PC is not explaining texting behavior but might be explaining rest of the three variables . Also note that if we want to explain more variance, we may retain three components and let third component explain introvert behavior.
+
+Q3.E: Center and scale data and report 5 Z-score. $Z_{txtsent}$ = (# of text sent - average text sent)/standard deviation of txt sent.
+```{r Q3.e., echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+#scaled and centered data of all variable.
+sc.q3.data = scale(q3.data, center = TRUE, scale = TRUE)
+z.hsclass = (hsclass - mean(hsclass))/sd(hsclass)
+z.txtsent = (txtsent - mean(txtsent))/sd(txtsent)
+z.txtrec = (txtrec - mean(txtrec))/sd(txtrec)
+z.fbtime = (fbtime - mean(fbtime))/sd(fbtime)
+z.introvert = (introvert - mean(introvert))/sd(introvert)
+scale.man = as.data.frame(cbind(z.hsclass, z.txtsent, 
+                                z.txtrec, z.fbtime, z.introvert))
+q3e.45score = scale.man[45,] #5 Z-score for 45th Student.
+q3e.45score # 5 Z-scores for 45th Student.
+```
+
+For txtsent and txtrec I am above average, for hsclass, I am about average and for fbtime and introvert, I am below average.
+
+Q3.F: Report PC score and verify manually by computing using answer above, and the loading from the first PC. Interpret your PC.
+```{r Q3.F., echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+q3f.scores = q3c.pca$scores #PC Scores.
+q3f.scores[1] #Report PC Scores.
+
+q3f.score = scale.man[1,] #5 Z-score for 45th Student from manual computation.
+q3f.score # 5 Z-scores for 45th Student.
+
+q3f.Ist.pc = q3c.pca$loadings[,1] #Ist PC loading. This is common for all students.
+q3f.Ist.pc
+
+Z1.q3f = (q3f.score[1]*q3f.Ist.pc[1]) + 
+  (q3f.score[2]*q3f.Ist.pc[2]) + 
+  (q3f.score[3]*q3f.Ist.pc[3]) + 
+  (q3f.score[4]*q3f.Ist.pc[4]) + 
+  (q3f.score[5]*q3f.Ist.pc[5])
+as.data.frame(cbind(Z1.q3f, q3f.scores[1])) #these scores should be equal.
+```
+
+This gives first PC loading for first observation. First PC is correlated with texting behavior but for the selected case, it loaded negatively in the Ist PC. So, we can expect that the person has lower values in texting related behaviour.
+
+
+Q3.G: How many PCs would you need to retain 80% or more of the variances?
+```{r Q3.G., echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+summary(q3c.pca)
+```
+
+To retain 80% or more variability, we need to retain at least 3 components as cumulative proportion of variance explained by up to 3 PCs is 82.26%.
+
+
+Q4.: Cluster Analysis on the Social Media Data:
+
+Q4.a.I:
+```{r Q4.a, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+set.seed(1)
+q4.data = scale(q3.data, center = TRUE, scale = TRUE)  #Centered & Scaled data.
+q4.kfit = kmeans(q4.data, # data
+                 centers = 2, # Clusters K = 2
+                 iter.max = 20, # maximum iteration.
+                 nstart = 50) # # of random starting points.
+q4.kfit
+
+centroids = q4.kfit$centers
+centroids #centroids for cluster 1 and cluster 2 for each variable.
+
+Within.Cluster = q4.kfit$withinss
+Within.Cluster # Within cluster sum of squares (cluster 1 and cluster 2)
+
+Total.variability = (q4.kfit$betweenss/q4.kfit$totss)*100 
+Total.variability # total variability explained by cluster assignment.
+
+total.SS = q4.kfit$totss
+total.SS # Total sum of squares.
+
+Total.Within.SS = q4.kfit$tot.withinss
+Total.Within.SS # Total within sum of squares.
+
+Between.SS = q4.kfit$betweenss
+Between.SS # Between Sum of Squares.
+```
+
+Q4.a.II:
+```{r Q4.a.II, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+centroids = q4.kfit$centers
+centroids #centroids for cluster 1 and cluster 2 for each variable.
+```
+
+In cluster 1 here, the loading is defined by txt sent and txt received as these two variables has highest loadings which is same as Ist PC of PCA defined by loading of txtsent and txtrec. The cluster 1 has higher centroid value compared to cluster 2 for all variables except introvert. The introvert has higher centroid value for cluster 2 and lower centroid value for cluster 1. As seen in the first PC earlier, hsclass, txtsent, txtrec, fbtime loaded in the first principle component positively and intorvert loaded negatively in Ist PC which is also reflected in the K-mean clustering. 
+
+Q4.a.III: Use pairs function to plot all pairwise plots on centered and scaled data.
+```{r Q4.a.III, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+pairs(q4.data, 
+      col = q4.kfit$cluster + 1, 
+      pch = q4.kfit$cluster,
+      main = "Pairwise Plot")
+plot(q3c.pca$scores[,1:2],
+     col = q4.kfit$cluster + 1,
+     pch = q4.kfit$cluster,
+     xlab = "PC 1 Variable Loading",
+     ylab = "PC 2 Variable Loading",
+     main = "PC1 Vs PC2 Plot")
+```
+
+The bivariate plot depicits across cluster variation the best. In the scatter plot red circles and green triangles are mixed with each other and hard to understand/differentiate the trend. However, in the PC bivariate plot, we can clearly divide the plot into two clusters based on the color and shape of plot characteristics. This is because PCs explain large variations in the data using less number of uncorrelated variables (PCs) unlike scatterplot which uses five variables to explain the variance in the data.
+
+Q4.b: Get dendrogram for agglomerative cluster analysis for complete, average, single and centroid linkage:
+```{r Q4.b, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+# q4.data = scale(q3.data, center = TRUE, scale = TRUE)
+par(mfrow = c(2,2))
+q4b.complete = hclust(dist(q4.data),
+                      method = "complete")
+plot(q4b.complete, 
+     xlab = "", sub = " ",
+     main = "Complete")
+
+q4b.average = hclust(dist(q4.data),
+                      method = "average")
+plot(q4b.average, 
+     xlab = "", sub = " ",
+     main = "Average")
+
+q4b.single = hclust(dist(q4.data),
+                      method = "single")
+plot(q4b.single, 
+     xlab = "", sub = " ",
+     main = "Single")
+
+q4b.centroid = hclust(dist(q4.data),
+                      method = "centroid")
+plot(q4b.centroid, 
+     xlab = "", sub = " ",
+     main = "Centroid")
+```
+
+
+Q4.b.45: Remove 45th Observation and Redo PCA, Kmean and Hierarchial:
+```{r Q4.b.45, echo=TRUE, message=TRUE, warning=TRUE, paged.print=FALSE}
+q4.45.data = rbind(q3.data[1:44, ], q3.data[46:47,]) 
+q4.45 = scale(q4.45.data, center = TRUE, scale = TRUE)
+
+q4.45.pca = princomp(q4.45, cor = TRUE) #PCA Scaled.
+q4.45.pca$loadings
+summary(q4.45.pca)
+
+q4.45.kfit = kmeans(q4.45, # data
+                 centers = 2, # Clusters K = 2
+                 iter.max = 20, # maximum iteration.
+                 nstart = 50) # # of random starting points.
+q4.45.kfit
+par(mfrow = c(2,2))
+q4.45.complete = hclust(dist(q4.45),
+                      method = "complete")
+plot(q4.45.complete, 
+     xlab = "", sub = " ",
+     main = "Complete")
+
+q4.45.average = hclust(dist(q4.45),
+                      method = "average")
+plot(q4.45.average, 
+     xlab = "", sub = " ",
+     main = "Average")
+
+q4.45.single = hclust(dist(q4.45),
+                      method = "single")
+plot(q4.45.single, 
+     xlab = "", sub = " ",
+     main = "Single")
+
+q4.45.centroid = hclust(dist(q4.45),
+                      method = "centroid")
+plot(q4.45.centroid, 
+     xlab = "", sub = " ",
+     main = "Centroid")
+```
+
+Yes. Removing 45th Student from the observation can change the result in PCA, K-mean clusering and Hierarchial clustering. But depends upon which level of change we are considering, change might be significant or non-significant. For example, removing 45th student did not change the how each variaable loads in first and second factors but the variance explained by both increased. However, loadings of variables in PC3, PC4 and PC5 changed. In K-mean clustering, Total proportion of variation attributed to cluster assignment increased and cluster means also change when student 45 is removed from the dataset. Clustering as shown by dendrogram using various method also changed.
+
+
+
+
+
+
+EXTRA CREDIT PROBLEM FROM Q1 IN NEXT PAGE
+
+Remarks after grading: Extra credit does not make sense and no points was obtained. So, discard extra credit solution.
+
+
+
+

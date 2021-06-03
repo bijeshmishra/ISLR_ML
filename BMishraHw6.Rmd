@@ -1,0 +1,335 @@
+---
+title: "Hw6"
+author: "Bijesh Mishra"
+date: "4/5/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Machine Learning Chapter 6: Model Selection:
+
+```{r HW6. Prep., echo=TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+rm(list = ls())
+setwd("/Users/bmishra/Dropbox/OSU/PhD/SemVISp2021/STAT5063ML/Homeworks/hw6 Model Select.")
+library(MASS)
+library(boot)
+library(ISLR)
+library(class)
+library(readxl)
+library(carData, warn.conflicts = F)
+library(car, warn.conflicts = F)
+library(leaps, warn.conflicts = F) #  All-subset Regression.
+library(pls, warn.conflicts = F) # Parital Least Square, Principle Component Regression.
+library(Matrix, warn.conflicts = F, logical.return = F)
+require(glmnet, quietly = T, warn.conflicts = F) #Ridge & LASSO (Penalized) Regression.
+studentdata2019 = read_excel("//Users//bmishra//Dropbox//OSU//PhD//SemVISp2021//STAT5063ML//Data//StudentData2019.xlsx") #mac
+hw6.data = setNames(studentdata2019,
+                   tolower(names(studentdata2019))) #lower case names.
+attach(hw6.data, pos = 2L, warn.conflicts = F)
+# names(hw6.data)
+as.data.frame(hw6.data[c(4,36),])
+```
+
+Q1.A: Subset Selection Model:
+```{r HW6.Q1.A, echo=TRUE, message=TRUE, warning=FALSE, paged.print=TRUE}
+# Step 1: Get a model fit with all variables.
+fit.q1a = regsubsets(introvert ~ .,  
+                     data = hw6.data, 
+                     nvmax = 9) # Maximum size of variables.
+summary.fitq1a =  summary(fit.q1a)
+summary.fitq1a
+# Step 2: Identify Selection Criteria.
+attach(summary.fitq1a)
+
+which.min(bic) # Minimum BIC.
+which.min(cp) # Minimum Mallow Cp.
+which.max(adjr2) #Maximum Adjusted R-Squared.
+cat("Parameter to be included on the model based on smallest value of BIC is textsent and based 
+    on Adjusted R-Squared (maximum value) and Mallow CP. (Smallest Value) are txtsent and year.")
+
+# Plotting Models:
+plot(fit.q1a, scale = "bic", 
+     main = "BIC based Model Fit")
+plot(fit.q1a, scale = "Cp", 
+     main = "Mallow Cp. based Model Fit")
+plot(fit.q1a, scale = "adjr2", 
+     main = "Adj-R2 based Model Fit")
+
+# Matplot:
+matplot(1:9, cbind(rsq, adjr2), type = "b", 
+        xlab = "Parameters", ylab = "RSQ, Adj-R2",
+        main = "Parameters Vs. RSQ, & Adj-R2")
+legend("bottomleft", 
+       col = c(1, 2), 
+       title = "Legend",
+       pch = c("1", "2"),
+       legend = c("RSQ",
+                  "Adj-R2"))
+
+matplot(1:9, cbind(rsq, cp), type = "b", 
+        xlab = "Parameters", ylab = "RSQ, M. Cp",
+        main = "Parameters Vs. RSQ, M. Cp")
+legend("topleft", 
+       col = c(1, 2), 
+       title = "Legend",
+       pch = c("1", "2"),
+       legend = c("RSQ",
+                  "M.Cp"))
+
+matplot(1:9, cbind(rsq, bic), type = "b", 
+        xlab = "Parameters", ylab = "RSQ, BIC",
+        main = "Parameters Vs. RSQ, BIC")
+legend("topleft", 
+       col = c(1, 2), 
+       title = "Legend",
+       pch = c("1", "2"),
+       legend = c("RSQ",
+                  "BIC"))
+```
+
+```{r HW6.Q1.A Cat, echo=FALSE, message=TRUE, warning = TRUE, paged.print=TRUE}
+cat("Answer: Also as reflected in each graphs above besides calculated values previously,")
+cat("In Parameters Vs. RSQ, & Adj-R2 graph, The Adj-R2 value is highest for model with" , which.max(adjr2), "parameters.")
+cat("In Parameters Vs. RSQ, M. Cp graph, The M. Cp value is lowest for model with" , which.min(cp), "parameters.")
+cat("In Parameters Vs. RSQ, BIC graph, The BIC value is lowest for model with", which.min(bic), "parameters.")
+cat("All of the charts above show minimized Residual Sum of Squares (RSS).")
+cat("These answers can also be visualized in the charts below as well: Eg. In BIC and M. Cp charts, 
+we can see model with text sent and year has lowest BIC, and M.Cp values.
+But in Adj-R2 Chart, model with textsent has highest Adj-R2 value.")
+```
+
+Q1.B: Report and interpret the R squared for any identified models above.
+```{r HW6.Q1.B, echo=TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+lm.q1b1 = lm(introvert ~ txtsent, data = hw6.data)
+summary(lm.q1b1)
+
+cat("Ans Q1.B: The R-squared value value of model with one (ie. textsent) predictor is 0.04906 
+    implies that 4.91 % variations in the model is explained by given predictor in the model. ")
+
+lm.q1b2 = lm(introvert ~ txtsent + year, data = hw6.data) 
+summary(lm.q1b2)
+
+cat("Ans Q1.B: The R-squared value value of model with two (ie. textsent and year) predictors is 
+0.1079 implies that 10.79 % variation in the model is explained by given predictors in the model. ")
+```
+
+Q2: Dimension Reduction:
+
+Q2.A: Principle Component Regression:
+```{r HW6.Q2.A, echo = TRUE, message = TRUE, warning = TRUE, paged.print = TRUE}
+q2.data = (hw6.data[,c(3, 4, 5, 6, 9, 10)]) # Unscaled Data.
+attach(q2.data, warn.conflicts = F)
+as.data.frame(q2.data[1,])
+
+# Step 1: Get PCA on centered and scaled data.
+set.seed(1)
+pcr.q2a = pcr(introvert ~ ., # Formula
+              data = q2.data, # Unscaled Data
+              scale = TRUE, # Scale the data
+              validation = "LOO") # LOOCV Method.
+summary(pcr.q2a)
+```
+
+Based on Principle Component Regression (PCR), the leave one out cross validation error (LOOCV), as given by CV above, is lowest for the model with only intercept (models without any predictor variables).Thus, the final model is the model with only intercept.
+
+Principle Component Regression (PCR): The R-squared value for predicting introver with one and five PCs are equal to 1.678% and 12.09 % respectively which implies that the variation explained by models with one PC and five PCs are 1.678% and 12.09% respectively.
+
+Q2.B: Partial Least Square Regression: 
+```{r HW6.Q2.B, echo=TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+# Maximize R-Squared values ie. correlation between y and yhat.
+set.seed(1)
+plsr.q2b = plsr(introvert ~ ., # Formula
+              data = q2.data, # Unscaled Data
+              scale = TRUE, # Scale the data
+              validation = "LOO") # LOOCV Method.
+summary(plsr.q2b)
+```
+
+Based on Partial Leaset Squares Regression (PLSR), the leave one out cross validation error (LOOCV), as given by CV above, is lowest for the model with only intercept (models without any predictor variables).Thus, the final model is the model with only intercept. 
+
+Partial Leaset Squares Regression (PLSR): The R-squared value for predicting introver with one and five PCs are equal to 9.658% and 12.09% respectively which implies that the variation explained by models with one PC and five PCs are 9.658% and 12.09% respectively. Note: Training: % variance explained in dependent variable row (introvert) give R-squared value of each model with one to five PCs.
+
+Q2.C: Multiple regression model predicting introvert with 5 predictors.
+```{r HW6.Q2.C, echo=TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+lmfit.q2c = lm(introvert ~ ., # Formula
+              data = q2.data)
+summary(lmfit.q2c)
+```
+
+P-value for $H_o$: $\beta_1$ = ... = $\beta_5$ = 0 is 0.3611, implies that we fail to reject $H_o$. Thus none of the variables is responsible for explaining the variation in the model. Yes, this is consistent with previous answers because based on both PCR and PSLR models, the smallest CV is for model with intercept only. The varation in the model explained by given set of five predictors is 12.09%.
+
+Q3: LASSO.
+
+Q3.A:
+```{r HW6.Q3.A, echo = TRUE, message = TRUE, warning = TRUE, paged.print = TRUE}
+moma.q3 = model.matrix(snapchat ~ . -1, hw6.data) # Design Matrix w/o intercept.
+y.q3 = hw6.data$snapchat # Dependent variable: Snapchat (1/0).
+row1.momaq3 = moma.q3[1,] # First Row of Design Matrix.
+row1.momaq3 # First Row of Design Matrix.
+```
+```{r HW6.Q3.A Cat, echo = FALSE, message = TRUE, warning = TRUE, paged.print = TRUE}
+cat( "Q3A Answer: Using the first row of design matrix,  the person was not enrolled in 
+     STAT 5063 and is not a pinterest user. Thus I predict a person who is not enrolled in
+     STAT5063 is not a pinterest user" )
+```
+
+Q3.B:
+```{r HW6.Q3.B, echo=TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+# Step 1: Get lambda estimate, Cross Validation (CV) w/ Test Set.
+set.seed(1)
+q3.cv.glmnet = cv.glmnet(x = moma.q3, #Dependent Variables.
+                   y = y.q3, # Snapchat: 1/0.
+                   family = "binomial",  # Logistic Regression.
+                   type.measure = "class", # Compute Classification Error.
+                   alpha = 1, # 1 = LASSO ; 0  = Ridge Regression.
+                   nfolds = length(y.q3)) # K-fold = # Obs. for LOOCV.
+plot(q3.cv.glmnet)
+
+# Step 2: Get Minimum Lambda (Tuning Parameter) to tune the model.
+lambda.hat.q3 = q3.cv.glmnet$lambda.min # Optimum Lambda/Tuining Parameter.
+round(lambda.hat.q3, 3) # The LOOCV estimate for optimum lambda that minimize LOOCV test error
+```
+```{r HW6.Q3.B Cat, echo = FALSE, message = TRUE, warning = TRUE, paged.print = TRUE}
+cat( "Answer: The LOOCV estimate for lambda is", round(lambda.hat.q3,3),".")
+```
+
+Q3.C: Final Prediction Equation for Pr(Snapchat):
+```{r HW6.Q3.C, echo=TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+# Step 3: Use "lambda.min" to get LASSO (Or Ridge Regression) estimates:
+set.seed(1)
+q3.glmnet = glmnet(x = moma.q3, # Independent Variables
+                   y = y.q3, # Dependent Variable # Snapchat: 1/0.
+                   family = "binomial", # Logistic Regression.
+                   alpha = 1, # 1 = LASSO ; 0  = Ridge Regression.
+                   nfolds = length(y.q3), # K-fold = # Obs for LOOCV ?
+                   lambda = lambda.hat.q3) # Optimum Lambda.
+coef(q3.glmnet) # Coefficients.
+```
+```{r HW6.Q3.C Cat, echo = FALSE, message = TRUE, warning = TRUE, paged.print = TRUE}
+cat( "Q3.C Answer: logit(Pr(Snapchat) =", round(q3.glmnet$a0, 3), "+ (0 x genderF) + (0 x GenderM) + (", round(q3.glmnet$beta[3], 3), "x ClassSTAT5063) 
+     + (0 x hsclass) + (" , round(q3.glmnet$beta[5], 3), "x txtsent) + (0 x txtrec) + (0 x fbtime) + (0 x pinterestY) + 
+     (0 x year)")
+```
+
+Q3.D: Estimated Probability of Student Having Snapchat Account.
+```{r HW6.Q3.D, echo=TRUE, message=TRUE, warning=TRUE, paged.print=TRUE}
+newstu.q3d = data.matrix(cbind( genderF = 0, genderM = 1, classSTAT5063 = 1,
+                                hasclass = 200, txtsent = 100, txtrec = 100,
+                                fbtime  = 60, pinterestY= 1, introvert = 5,
+                                year = 2021))
+
+Snap.Pr.q3d = q3.glmnet$a0 + q3.glmnet$beta[1] * newstu.q3d[1] + 
+  q3.glmnet$beta[2] * newstu.q3d[2] + q3.glmnet$beta[3] * newstu.q3d[3] +
+  q3.glmnet$beta[4] * newstu.q3d[4] + q3.glmnet$beta[5] * newstu.q3d[5] +
+  q3.glmnet$beta[6] * newstu.q3d[6] + q3.glmnet$beta[7] * newstu.q3d[7] +
+  q3.glmnet$beta[8] * newstu.q3d[8] + q3.glmnet$beta[9] * newstu.q3d[9] +
+  q3.glmnet$beta[10] * newstu.q3d[10]
+est.prob.q3d = exp(Snap.Pr.q3d)/(1 + exp(Snap.Pr.q3d))
+est.prob.q3d
+```
+```{r HW6.Q3.D Cat, echo=FALSE, message=TRUE, warning = TRUE, paged.print=TRUE}
+cat("Q3.D Answer: Estimated probability of a student having a Snapchat account given that 
+they are: male, having pinterest account, are enrolled in STAT 5063, HSClass is 200, 
+txtsent is 100, txtrec is 100, Fbtime is 60, introvert is 5 and year in 2021 =", round(est.prob.q3d, 3), ".")
+```
+
+Q4: Ridge Regression:
+
+Q4.A: LOOCV Estimate for $\lambda$:
+```{r HW6.Q4.A, echo = TRUE, message = TRUE, warning = TRUE, paged.print = TRUE}
+# moma.q3a is Model Design Matrix X and y.q4 is dependent variable.
+moma.q4 = model.matrix(snapchat ~ . -1, hw6.data)
+y.q4 = hw6.data$snapchat
+
+# Step 1: Get lambda estimate, Cross Validation (CV) w/ Test Set.
+set.seed(1)
+q4.cv.glmnet = cv.glmnet(x = moma.q4,
+                   y = y.q4, # Snapchat: 1/0.
+                   family = "binomial",  # Logistic Regression.
+                   alpha = 0, # Ridge Regression. 1 = LASSO.
+                   type.measure = "class", #Compute classification error
+                   nfolds = length(y.q4)) # K = 10 Fold CV.
+plot(q4.cv.glmnet)
+
+# Step 2: Get Minimum Lambda (Tuning Parameter) to tune the model.
+lambda.hat.q4 = q4.cv.glmnet$lambda.min # Lambda.hat
+lambda.hat.q4
+log(lambda.hat.q4) 
+cat("Q4.A Answer: The LOOCV Estimate for Lambda = ",
+    round(lambda.hat.q4, 3))
+
+# Step 3: Use (tuining Parameter) to get LASSO estimates:
+set.seed(1)
+q4.glmnet = glmnet(x = moma.q4,
+                   y = y.q4, # Snapchat: 1/0.
+                   family = "binomial", # Logistic Regression
+                   alpha = 0, # Ridge regression. 1 for LASSO.
+                   nfolds = length(y.q4), # LOOCV
+                   lambda = lambda.hat.q4)  # Minimize Lagrangean Multiplier to maximize constraints.
+coef(q4.glmnet)
+```
+
+Q4.B: Estimated Probability Pr(Snapchat).
+```{r HW6.Q4.B, echo = TRUE, message = TRUE, warning = TRUE, paged.print = TRUE}
+newst.q4 = data.matrix(cbind(genderF = 0, genderM = 1, 
+                             classSTAT5063 = 1, hasclass = 200,txtsent = 100,
+                             txtrec = 100, fbtime  = 60, pinterestY= 1,
+                             introvert = 5, year = 2021))
+
+Snap.Pr.q4b = q4.glmnet$a0 + q4.glmnet$beta[1]*newst.q4[1] + 
+  q4.glmnet$beta[2]*newst.q4[2] + q4.glmnet$beta[3]*newst.q4[3] +
+  q4.glmnet$beta[4]*newst.q4[4] + q4.glmnet$beta[5]*newst.q4[5] +
+  q4.glmnet$beta[6]*newst.q4[6] + q4.glmnet$beta[7]*newst.q4[7] +
+  q4.glmnet$beta[8]*newst.q4[8] + q4.glmnet$beta[9]*newst.q4[9] +
+  q4.glmnet$beta[10]*newst.q4[10]
+est.prob.q4b = exp(Snap.Pr.q4b)/(1 + exp(Snap.Pr.q4b))
+est.prob.q4b
+```
+```{r HW6.Q4.B Cat, echo = FALSE, message = TRUE, warning = TRUE, paged.print = TRUE}
+cat("Q4.B Answer: Estimated probability of a student having a Snapchat account given that 
+they are: male, having pinterest account, are enrolled in STAT 5063, HSClass is 200, 
+txtsent is 100, txtrec is 100, Fbtime is 60, introvert is 5 and year in 2021 =", round(est.prob.q4b, 3), ".")
+```
+
+Q5.:
+```{r HW6.Q5, echo=TRUE, message=TRUE, warning=FALSE, paged.print=FALSE}
+get.MSE.i = function(X, y, alpha = 0, i = 1)
+{fit = cv.glmnet(x = X[-i,], y = y[-i], 
+                alpha = alpha, nfolds = nrow(X[-i,]))
+  lambda.hat = fit$lambda.min
+  fit = glmnet(x=X[-i,],y=y[-i], alpha=alpha, lambda = lambda.hat)
+  yhat = predict(fit,newx=X)[i]
+  return((yhat-y[i])^2)}
+
+f = function(X,y,alpha=0){
+  MSE = rep(0,nrow(X))
+for(i in 1:nrow(X)){
+  MSE[i] = get.MSE.i(X,y,alpha,i)
+}
+  return(mean(MSE))
+  }
+
+moma.q5 = model.matrix(introvert ~ . -1, hw6.data) # Model Matrix
+y.q5 = hw6.data$introvert # Introvert
+
+Ridge.regression.MSE = f(moma.q5, y.q5, 0) # Ridge Regression
+Ridge.regression.MSE
+cat("Ridge Regression MSE = ", round(Ridge.regression.MSE, 3))
+
+LASSO.MSE = f(moma.q5, y.q5, 1) # LASSO
+LASSO.MSE
+cat("LASSO MSE = ", round(LASSO.MSE, 3) )
+```
+
+Q5.A:function f is getting the LOOCV test error for a procedure that selects lambda using LOOCV.  Cv.glmnet technically reports the training error since all the data is used to select lambda.
+
+
+Q5.B: The test MSE estimate for LASSO (4.90) is than geater than that for Ridge Regression (4.58). So, we should use Ridge Regression to predict introvert with rest of the variables.
+
+
+Q5.C: For categorical variable, we need to add family = "binomial", and type.measure = "class" to obtain misclassification error. We should look for "Binomial Deviance" instead of test MSE as we did in Q4.
+
+
+Q5.D: If we do nfold = 10, it divides entire datasets into 10 different groups and allocate 9 datasets as training dataset and remaining 1 group as test dataset. Since there are more than one ways to allocate datasets into 10 groups, it is virtually impossible to reproduce same result everytime if seed is not set. set.seed() tells R to start picking random value from the same location using same random number algorithm which makes our work replicable.
